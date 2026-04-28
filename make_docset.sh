@@ -62,10 +62,22 @@ EOF
             if [[ $name == Category* ]]; then
                 type='Category'
                 name=${name#Category}
-            elif [[ $name =~ ^[A-Z_]+$ ]]; then
+            elif [[ $name =~ ^[A-Z_0-9x]+$ ]]; then
                 type='Define'
             elif [[ $name == SDL_* ]]; then
-                type='Function'
+                if grep -Eq "class=\"sourceCode\".*struct.*$name" "$path"; then
+                    type='Struct'
+                elif grep -Eq "class=\"sourceCode\".*enum.*$name" "$path"; then
+                    type='Enum'
+                elif grep -Eq "class=\"sourceCode\".*union.*$name" "$path"; then
+                    type='Union'
+                elif grep -Eq "class=\"sourceCode\".*typedef.*$name" "$path"; then
+                    type='Type'
+                elif grep -Eq "class=\"sourceCode\".*define.*$name" "$path"; then
+                    type='Macro'
+                else
+                    type='Function'
+                fi
             fi
             echo "INSERT INTO searchIndex(name, type, path) VALUES ('$name', '$type', '$path');"
         done
@@ -76,6 +88,12 @@ EOF
     } | sqlite3 "$docset_db"
 }
 
+
+create_docset SDL3
+create_docset SDL3_image
+create_docset SDL3_ttf
+
+exit 0
 
 ls sdlwiki | while read group; do
     create_docset "$group"
